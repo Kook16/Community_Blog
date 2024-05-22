@@ -1,0 +1,11 @@
+{% extends 'index.html' %}
+
+{% block content %}
+    {% for post in posts %}
+        <h2>Title: {{ post.title }}</h2>
+        <h3>Author: {{ post.author }} at {{ post.time_created }}</h3>
+        <div>
+            <p>{{ post.content }}</p>
+        </div>
+    {% endfor %}
+{% endblock %}

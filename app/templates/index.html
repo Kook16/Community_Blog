@@ -1,0 +1,24 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if title %}
+        <title>{{ title }}</title>
+    {% else %}
+        <title>Community Blog</title>
+    {% endif %}
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <span><li><a href="{{url_for('home')}}">Home</a></li></span>
+                <span><li><a href="{{url_for('home')}}">About</a></li></span>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
