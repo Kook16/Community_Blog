@@ -1,5 +1,28 @@
 {% extends 'index.html' %}
 
 {% block content %}
-    <h2>About page</h2>
+<img src="../../static/images/download.jpeg" alt="">
+<h1>{{ user.username }}</h1>
+<p>Email: {{ user.email }}</p>
+<p>Followers: {{ user.followers.count() }}  Following: {{ user.followed.count() }}</p>
+{% if current_user.is_authenticated %}
+    {% if current_user != user %}
+        {% if current_user.is_following(user) %}
+            <a href="{{ url_for('unfollow', username=user.username) }}" class="btn btn-secondary">Unfollow</a>
+        {% else %}
+            <a href="{{ url_for('follow', username=user.username) }}" class="btn btn-primary">Follow</a>
+        {% endif %}
+    {% endif %}
+{% endif %}
+<h2>Posts by {{ user.username }}</h2>
+    <ul>
+        {% for post in posts %}
+            <li>
+                <h3>{{ post.title }}</h3>
+                <p>{{ post.content }}</p>
+                <small>Posted on {{ post.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+            </li>
+        {% endfor %}
+    </ul>
+
 {% endblock %}
