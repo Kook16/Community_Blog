@@ -1,42 +1,19 @@
 from flask import Flask, render_template, redirect, url_for, flash
 from .forms import RegistrationForm, LoginForm
-from app import app
+from app import app, db, login_manager
+from app.models import Post, User
+from flask_login import current_user, logout_user, login_user# Redirect to login page if not authenticated
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 
 @app.route('/')
 @app.route('/home')
 def home():
-    posts = [
-        {
-            "author": "Alice",
-            "title": "My Journey to the Mountains",
-            "time_created": "2024-05-15 10:30:00",
-            "content": "Last weekend, I visited the mountains and it was a breathtaking experience. The fresh air and the scenic views were unforgettable."
-        },
-        {
-            "author": "Bob",
-            "title": "A Day in the Life of a Software Engineer",
-            "time_created": "2024-05-16 09:15:00",
-            "content": "Being a software engineer involves solving complex problems, coding, and continuously learning new technologies. It’s a dynamic and rewarding career."
-        },
-        {
-            "author": "Charlie",
-            "title": "The Benefits of Morning Exercise",
-            "time_created": "2024-05-17 06:45:00",
-            "content": "Starting your day with a morning workout can boost your energy levels, improve your mood, and set a positive tone for the rest of the day."
-        },
-        {
-            "author": "Dana",
-            "title": "Exploring the Local Cuisine",
-            "time_created": "2024-05-18 13:20:00",
-            "content": "I recently had the chance to explore our local cuisine. The variety of flavors and the richness of the dishes were truly amazing. I highly recommend trying the street food."
-        },
-        {
-            "author": "Eli",
-            "title": "Tips for a Successful Garden",
-            "time_created": "2024-05-19 08:00:00",
-            "content": "Gardening requires patience and care. Some tips for success include choosing the right plants for your climate, watering regularly, and keeping an eye out for pests."
-        }
-    ]
+    posts = Post.query.all()
     return render_template('home.html', title='Home', posts=posts)
 
 
@@ -54,26 +31,32 @@ def contact():
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
+        user = User(username=form.username.data, email=form.email.data,
+                    password=form.password.data)
+        db.session.add(user)
+        db.session.commit()
         flash(f'Account created for {form.username.data}!', 'success')
-        return redirect(url_for('home'))
+        return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
 
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    print("form submitted")
     if form.validate_on_submit():
-        if form.email.data == 'hello@gmail.com' and form.password.data == 'password':
+        email = form.email.data
+        user = User.query.filter_by(email=email).first()
+        if user and form.password.data == user.password:
+            login_user(user)
             flash('Logged in successfully!', 'success')
-            print("Redirecting to home")
-        else:
-            flash('Unsuccessful Login, Please Check email and password and try again!', 'danger')
-            print("unsuccessful login")
-    return render_template('/login.html', title='Login', form=form)
+            return redirect(url_for('home'))
+        flash('Unsuccessful Login, Please Check email and password and try again!', 'danger')
+        return redirect(url_for('login'))
+    return render_template('login.html', title='Login', form=form)
 
 
 @app.route('/logout')
 def logout():
+    logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
