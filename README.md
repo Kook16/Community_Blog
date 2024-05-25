@@ -1,7 +1,3 @@
-Sure, I can help you improve and expand your README to make it clearer and more comprehensive. Here's a revised version:
-
----
-
 # Project Setup Instructions
 
 To test the functionality of the login and register features, you'll need to set up a database. We'll use SQLite for simplicity. Follow the steps below to get everything started:
