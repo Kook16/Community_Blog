@@ -70,7 +70,7 @@ def login():
         else:
             flash('Unsuccessful Login, Please Check email and password and try again!', 'danger')
             print("unsuccessful login")
-    return render_template('/home.html', title='Login', form=form)
+    return render_template('/login.html', title='Login', form=form)
 
 
 @app.route('/logout')
