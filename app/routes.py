@@ -1,48 +1,35 @@
 from flask import Flask, render_template, redirect, url_for, flash
-from .forms import RegistrationForm, LoginForm
-from app import app
+from .forms import RegistrationForm, LoginForm, AddPost
+from app import app, db, login_manager
+from app.models import Post, User
+from flask_login import current_user, logout_user, login_user, login_required
 
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+@login_required
 @app.route('/')
-@app.route('/home')
+@app.route('/home', methods=['GET', 'POST'])
 def home():
-    posts = [
-        {
-            "author": "Alice",
-            "title": "My Journey to the Mountains",
-            "time_created": "2024-05-15 10:30:00",
-            "content": "Last weekend, I visited the mountains and it was a breathtaking experience. The fresh air and the scenic views were unforgettable."
-        },
-        {
-            "author": "Bob",
-            "title": "A Day in the Life of a Software Engineer",
-            "time_created": "2024-05-16 09:15:00",
-            "content": "Being a software engineer involves solving complex problems, coding, and continuously learning new technologies. It’s a dynamic and rewarding career."
-        },
-        {
-            "author": "Charlie",
-            "title": "The Benefits of Morning Exercise",
-            "time_created": "2024-05-17 06:45:00",
-            "content": "Starting your day with a morning workout can boost your energy levels, improve your mood, and set a positive tone for the rest of the day."
-        },
-        {
-            "author": "Dana",
-            "title": "Exploring the Local Cuisine",
-            "time_created": "2024-05-18 13:20:00",
-            "content": "I recently had the chance to explore our local cuisine. The variety of flavors and the richness of the dishes were truly amazing. I highly recommend trying the street food."
-        },
-        {
-            "author": "Eli",
-            "title": "Tips for a Successful Garden",
-            "time_created": "2024-05-19 08:00:00",
-            "content": "Gardening requires patience and care. Some tips for success include choosing the right plants for your climate, watering regularly, and keeping an eye out for pests."
-        }
-    ]
-    return render_template('home.html', title='Home', posts=posts)
+    form = AddPost()
+    if form.validate_on_submit():
+        post = Post(title=form.title.data, content=form.content.data,
+                    user_id=current_user.id)
+        db.session.add(post)
+        db.session.commit()
+        flash('Your post has been created!', 'success')
+        return redirect(url_for('home'))
+    posts = Post.query.all()
+    return render_template('home.html', title='Home', posts=posts, form=form)
 
-
-@app.route('/about')
-def about():
-    return render_template('about.html', title='About')
+@login_required
+@app.route('/about/<username>')
+def about(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    posts = user.posts.order_by(Post.timestamp.desc()).all()
+    return render_template('about.html', title='About', posts=posts, user=user)
 
 
 @app.route('/contact')
@@ -52,28 +39,68 @@ def contact():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
     form = RegistrationForm()
     if form.validate_on_submit():
+        user = User(username=form.username.data, email=form.email.data,
+                    password=form.password.data)
+        db.session.add(user)
+        db.session.commit()
         flash(f'Account created for {form.username.data}!', 'success')
-        return redirect(url_for('home'))
+        return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
 
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
     form = LoginForm()
-    print("form submitted")
     if form.validate_on_submit():
-        if form.email.data == 'hello@gmail.com' and form.password.data == 'password':
+        email = form.email.data
+        user = User.query.filter_by(email=email).first()
+        if user and form.password.data == user.password:
+            login_user(user)
             flash('Logged in successfully!', 'success')
-            print("Redirecting to home")
-        else:
-            flash('Unsuccessful Login, Please Check email and password and try again!', 'danger')
-            print("unsuccessful login")
-    return render_template('/login.html', title='Login', form=form)
+            return redirect(url_for('home'))
+        flash('Unsuccessful Login, Please Check email and password and try again!', 'danger')
+        return redirect(url_for('login'))
+    return render_template('login.html', title='Login', form=form)
 
 
+@login_required
 @app.route('/logout')
 def logout():
+    logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
+
+@app.route('/follow/<username>')
+def follow(username):
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        flash('User {} not found'.format(username), 'danger')
+        return redirect(url_for('home'))
+    if user == current_user:
+        flash('You cannot follow yourself!', 'danger')
+        return redirect(url_for('about', username=username))
+    current_user.follow(user)
+    db.session.commit()
+    flash('You are now following {}'.format(username), 'success')
+    return redirect(url_for('about', username=username))
+
+
+@app.route('/unfollow/<username>')
+def unfollow(username):
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        flash('User {} not found'.format(username), 'danger')
+        return redirect(url_for('home'))
+    if user == current_user:
+        flash('You cannot unfollow yourself!', 'danger')
+        return redirect(url_for('about', username=username))
+    current_user.unfollow(user)
+    db.session.commit()
+    flash('You have unfollowed {}'.format(username), 'success')
+    return redirect(url_for('about', username=username))
