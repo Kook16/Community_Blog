@@ -13,6 +13,8 @@ def load_user(user_id):
 @app.route('/')
 @app.route('/home', methods=['GET', 'POST'])
 def home():
+    if current_user.is_anonymous:
+        return redirect(url_for('landingpage'))
     form = AddPost()
     if form.validate_on_submit():
         post = Post(title=form.title.data, content=form.content.data,
@@ -104,3 +106,7 @@ def unfollow(username):
     db.session.commit()
     flash('You have unfollowed {}'.format(username), 'success')
     return redirect(url_for('about', username=username))
+
+@app.route('/landingpage')
+def landingpage():
+    return render_template('landingpage.html')

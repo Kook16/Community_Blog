@@ -33,15 +33,13 @@
         {{ form.submit(class="btn btn-outline-info") }}
     </div>        
 </form>
-    {% for post in posts %}
-        <ul>
-            {% for post in posts %}
-                <li>
-                    <h3>{{ post.title }}</h3>
-                    <p>{{ post.content }}</p>
-                    <small>Post by <a href="{{ url_for('about', username=post.author.username) }}">{{ post.author.username }}</a> at {{ post.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
-                </li>
-            {% endfor %}
-        </ul>
-    {% endfor %}
+    <ul>
+        {% for post in posts %}
+            <li>
+                <h3>{{ post.title }}</h3>
+                <p>{{ post.content }}</p>
+                <small>Post by <a href="{{ url_for('about', username=post.author.username) }}">{{ post.author.username }}</a> at {{ post.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+            </li>
+        {% endfor %}
+    </ul>
 {% endblock %}

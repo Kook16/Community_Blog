@@ -4,10 +4,10 @@
 <div class="content-section">
     <form method="POST" action="{{ url_for('login') }}">
         {{ form.hidden_tag() }}
-        <fieldset class="form-group">
+        <fieldset class="form-control">
             <legend class="border-bottom mb-4">Join Today By Signing Up Your Community Voice</legend>
            
-            <div class="form-group">
+            <div class="form-group mb-2">
                 {{ form.email.label(class="form-control-label") }}
                 {{ form.email(class="form-control form-control-lg" if not form.email.errors else "form-control form-control-lg is-invalid") }}
                 {% if form.email.errors %}
@@ -29,22 +29,25 @@
                     </div>
                 {% endif %}
             </div>
-            <div class="form-check">
+            <div class="form-check mt-1">
                 {{ form.remember(class="form-check-input") }}
                 {{ form.remember.label(class="form-check-label") }}
             </div>
         </fieldset>
-        <div class="form-group">
+        <div class="form-group mt-2 pl-5">
             {{ form.submit(class="btn btn-outline-info") }}
+
+            <small class="text-muted ml-10">
+                <a href="#">Forgot Password?</a>
+            </small>
         </div>
-        <small class="text-muted ml-2">
-            <a href="#">Forgot Password?</a>
-        </small>        
+               
     </form>
 </div>
 <div class="border-top pt-3">
     <small class="text-muted">
-        Need an account? <a class="ml-5" href="{{ url_for('register') }}">Sign up</a>
+        Need an account? <a class="mr-5" href="{{ url_for('register') }}">Sign up</a>
     </small>
 </div>
+
 {% endblock %}
