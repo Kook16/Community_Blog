@@ -21,3 +21,17 @@ class AddPost(FlaskForm):
     title =StringField('Title', validators=[DataRequired()])
     content = TextAreaField(validators=[DataRequired()])
     submit = SubmitField('Post')
+
+class ResetPasswordRequestForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Submit')
+
+class ResetPassword(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm Password',
+                                     validators=[DataRequired(),EqualTo('password')])
+    submit = SubmitField('Reset Password')
+
+class ResetConfirmationLink(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Resend')
