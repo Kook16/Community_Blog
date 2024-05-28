@@ -1,28 +1,83 @@
-{% extends 'index.html' %}
+{% extends "index.html" %}
+
+{% block title %}{{ user.username }}'s Profile - Community Blog{% endblock %}
 
 {% block content %}
-<img src="../../static/images/download.jpeg" alt="">
-<h1>{{ user.username }}</h1>
-<p>Email: {{ user.email }}</p>
-<p>Followers: {{ user.followers.count() }}  Following: {{ user.followed.count() }}</p>
-{% if current_user.is_authenticated %}
-    {% if current_user != user %}
-        {% if current_user.is_following(user) %}
-            <a href="{{ url_for('unfollow', username=user.username) }}" class="btn btn-secondary">Unfollow</a>
-        {% else %}
-            <a href="{{ url_for('follow', username=user.username) }}" class="btn btn-primary">Follow</a>
-        {% endif %}
-    {% endif %}
-{% endif %}
-<h2>Posts by {{ user.username }}</h2>
-    <ul>
-        {% for post in posts %}
-            <li>
-                <h3>{{ post.title }}</h3>
-                <p>{{ post.content }}</p>
-                <small>Posted on {{ post.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
-            </li>
-        {% endfor %}
-    </ul>
-
+<div class="container">
+    <div class="row">
+        <div class="col-md-4 text-center">
+            <img src="{{ url_for('static', filename='images/' + user.img) }}" alt="Profile Picture" class="img-fluid rounded-circle mb-3">
+            <h1>{{ user.username }}</h1>
+            <p>Email: {{ user.email }}</p>
+            <p>Bio: {{ user.bio }}</p>
+            <p>Followers: {{ user.followers.count() }} | Following: {{ user.followed.count() }}</p>
+            {% if current_user.is_authenticated %}
+                {% if current_user != user %}
+                    {% if current_user.is_following(user) %}
+                        <a href="{{ url_for('unfollow', username=user.username) }}" class="btn btn-secondary">Unfollow</a>
+                    {% else %}
+                        <a href="{{ url_for('follow', username=user.username) }}" class="btn btn-primary">Follow</a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            {% if current_user == user %}
+            <h2 class="my-4">Edit Profile</h2>
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.username.label(class="form-control-label") }}
+                    {{ form.username(class="form-control form-control-lg" if not form.username.errors else "form-control form-control-lg is-invalid") }}
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.username.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.bio.label(class="form-control-label") }}
+                    {{ form.bio(class="form-control form-control-lg" if not form.bio.errors else "form-control form-control-lg is-invalid") }}
+                    {% if form.bio.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.bio.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.picture.label(class="form-control-label") }}
+                    {{ form.picture(class="form-control-file") }}
+                    {% if form.picture.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.picture.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-group mt-2">
+                    {{ form.submit(class="btn btn-outline-info") }}
+                </div>
+            </form>
+            {% endif %}
+            <h2 class="my-4">Posts by {{ user.username }}</h2>
+            <ul class="list-group">
+                {% for post in posts %}
+                    <li class="list-group-item mb-3 d-flex">
+                        <img class="mr-3 rounded-circle" src="{{ url_for('static', filename='images/' + post.author.img) }}" alt="{{ post.author.username }}" width="64" height="64">
+                        <div>
+                            <h3>{{ post.title }}</h3>
+                            <p>{{ post.content }}</p>
+                            <small class="text-muted">Posted on {{ post.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
 {% endblock %}

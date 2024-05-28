@@ -1,11 +1,14 @@
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_mail import Message
-from .forms import RegistrationForm, LoginForm, AddPost, ResetPasswordRequestForm, ResetPassword, ResetConfirmationLink
+from .forms import RegistrationForm, LoginForm, AddPost, ResetPasswordRequestForm, ResetPassword, ResetConfirmationLink, UpdateProfileForm
 from app import app, db, login_manager, mail, bcrypt
 from app.models import Post, User
 from app.utils import generate_confirmation_token, confirm_token
 from flask_login import current_user, logout_user, login_user, login_required
 from itsdangerous import SignatureExpired, BadTimeSignature, URLSafeTimedSerializer
+import os
+import secrets
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -28,12 +31,34 @@ def home():
     posts = Post.query.all()
     return render_template('home.html', title='Home', posts=posts, form=form)
 
+@app.route('/about/<username>', methods=['GET', 'POST'])
 @login_required
-@app.route('/about/<username>')
 def about(username):
     user = User.query.filter_by(username=username).first_or_404()
+    form = UpdateProfileForm()
+    if form.validate_on_submit() and current_user == user:
+        if form.picture.data:
+            picture_file = save_picture(form.picture.data)
+            current_user.img = picture_file
+        current_user.username = form.username.data
+        current_user.bio = form.bio.data
+        db.session.commit()
+        flash('Your account has been updated!', 'success')
+        return redirect(url_for('about', username=current_user.username))
+    elif request.method == 'GET':
+        form.username.data = user.username
+        form.bio.data = user.bio
     posts = user.posts.order_by(Post.timestamp.desc()).all()
-    return render_template('about.html', title='About', posts=posts, user=user)
+    return render_template('about.html', title='About', user=user, form=form, posts=posts)
+
+def save_picture(form_picture):
+    random_hex = secrets.token_hex(8)
+    _, f_ext = os.path.splitext(form_picture.filename)
+    picture_fn = random_hex + f_ext
+    picture_path = os.path.join(app.root_path, 'static/images', picture_fn)
+    form_picture.save(picture_path)
+    return picture_fn
+
 
 
 @app.route('/contact')
