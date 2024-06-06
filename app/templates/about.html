@@ -18,6 +18,7 @@
                     {% else %}
                         <a href="{{ url_for('follow', username=user.username) }}" class="btn btn-primary">Follow</a>
                     {% endif %}
+                    <a href="{{ url_for('conversation', username=user.username) }}" class="btn btn-primary">Message</a>
                 {% endif %}
             {% endif %}
         </div>
@@ -66,9 +67,9 @@
             {% endif %}
             <h2 class="my-4">Posts by {{ user.username }}</h2>
             <ul class="list-group">
-                {% for post in posts %}
+                {% for post in posts.items %}
                     <li class="list-group-item mb-3 d-flex">
-                        <img class="mr-3 rounded-circle" src="{{ url_for('static', filename='images/' + post.author.img) }}" alt="{{ post.author.username }}" width="64" height="64">
+                        <img class="mr-3 rounded-circle" src="{{ url_for('static', filename='images/' + post.author.img) }}" alt="{{ post.author.username }}" width="64" height="64" class="img-fluid rounded-circle mb-3">
                         <div>
                             <h3>{{ post.title }}</h3>
                             <p>{{ post.content }}</p>
@@ -77,6 +78,43 @@
                     </li>
                 {% endfor %}
             </ul>
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if posts.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('about', username=user.username, page=posts.prev_num) }}">Previous</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Previous</span>
+                        </li>
+                    {% endif %}
+                    {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == posts.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('about', username=user.username, page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if posts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('about', username=user.username, page=posts.next_num) }}">Next</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
     </div>
 </div>

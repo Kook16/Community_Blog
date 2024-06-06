@@ -1,8 +1,8 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, abort
 from flask_mail import Message
-from .forms import RegistrationForm, LoginForm, AddPost, ResetPasswordRequestForm, ResetPassword, ResetConfirmationLink, UpdateProfileForm
+from .forms import RegistrationForm, LoginForm, AddPost, ResetPasswordRequestForm, ResetPassword, ResetConfirmationLink, UpdateProfileForm, EditPostForm, MessageForm
 from app import app, db, login_manager, mail, bcrypt
-from app.models import Post, User
+from app.models import Post, User, UserMessage, Notification
 from app.utils import generate_confirmation_token, confirm_token
 from flask_login import current_user, logout_user, login_user, login_required
 from itsdangerous import SignatureExpired, BadTimeSignature, URLSafeTimedSerializer
@@ -28,8 +28,13 @@ def home():
         db.session.commit()
         flash('Your post has been created!', 'success')
         return redirect(url_for('home'))
-    posts = Post.query.all()
+
+    # Pagination
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.timestamp.desc()).paginate(page=page, per_page=10)
+    
     return render_template('home.html', title='Home', posts=posts, form=form)
+
 
 @app.route('/about/<username>', methods=['GET', 'POST'])
 @login_required
@@ -48,9 +53,11 @@ def about(username):
     elif request.method == 'GET':
         form.username.data = user.username
         form.bio.data = user.bio
-    posts = user.posts.order_by(Post.timestamp.desc()).all()
-    return render_template('about.html', title='About', user=user, form=form, posts=posts)
-
+    
+    page = request.args.get('page', 1, type=int)
+    posts = user.posts.order_by(Post.timestamp.desc()).paginate(page=page, per_page=10)
+    
+    return render_template('about.html', title=f"{user.username}'s Profile", user=user, form=form, posts=posts)
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_picture.filename)
@@ -59,6 +66,12 @@ def save_picture(form_picture):
     form_picture.save(picture_path)
     return picture_fn
 
+@app.context_processor
+def inject_notifications():
+    if current_user.is_authenticated:
+        unread_count = UserMessage.query.filter_by(receiver_id=current_user.id, read=False).count()
+        return dict(unread_count=unread_count)
+    return dict(unread_count=0)
 
 
 @app.route('/contact')
@@ -249,3 +262,96 @@ def reset_password(token):
         return redirect(url_for('login'))
     
     return render_template('reset_password.html', form=form)
+
+
+@login_required
+@app.route('/post/<int:post_id>/edit', methods=['GET', 'POST'])
+def edit_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    if post.author != current_user:
+        abort(403)
+    form = EditPostForm()
+    if form.validate_on_submit():
+        post.title = form.title.data
+        post.content = form.content.data
+        db.session.commit()
+        flash('Your post has been updated!', 'success')
+        return redirect(url_for('home'))
+    elif request.method == 'GET':
+        form.title.data = post.title
+        form.content.data = post.content
+    return render_template('edit_post.html', title='Edit Post', form=form, post=post)
+
+
+@login_required
+@app.route('/post/<int:post_id>/delete', methods=['POST'])
+def delete_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    if post.author != current_user:
+        abort(403)
+    db.session.delete(post)
+    db.session.commit()
+    flash('Your post has been deleted!', 'success')
+    return redirect(url_for('home'))
+
+@app.route('/messages/<username>', methods=['GET', 'POST'])
+@login_required
+def conversation(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    form = MessageForm()
+    if form.validate_on_submit():
+        message = UserMessage(content=form.content.data, sender_id=current_user.id, receiver_id=user.id)
+        db.session.add(message)
+        db.session.commit()
+        # flash('Your message has been sent!', 'success')
+        return redirect(url_for('conversation', username=username))
+    
+    messages_sent = UserMessage.query.filter_by(sender_id=current_user.id, receiver_id=user.id)
+    messages_received = UserMessage.query.filter_by(sender_id=user.id, receiver_id=current_user.id)
+    all_messages = messages_sent.union(messages_received).order_by(UserMessage.timestamp.asc())
+
+    for message in messages_received:
+        if not message.read:
+            message.read = True
+    db.session.commit()
+    
+    return render_template('conversation.html', title=f'Conversation with {username}', messages=all_messages, form=form, receiver=user)
+
+@app.route('/message_list')
+@login_required
+def message_list():
+    messages = UserMessage.query.filter_by(receiver_id=current_user.id).order_by(UserMessage.timestamp.desc()).all()
+    unread_count = UserMessage.query.filter_by(receiver_id=current_user.id, read=False).count()
+    return render_template('message_list.html', title='Messages', messages=messages, unread_count=unread_count)
+
+@app.route('/notifications')
+@login_required
+def notifications():
+    notifications = Notification.query.filter_by(user_id=current_user.id, read=False).all()
+    for notification in notifications:
+        notification.read = True
+    db.session.commit()
+    return render_template('notifications.html', title='Notifications', notifications=notifications)
+
+@app.route('/users/<username>')
+@login_required
+def users(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    unique_users = user.get_unique_followers_and_following()
+    return render_template('users.html', title='Users', users=unique_users)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('403.html'), 403
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+@app.errorhandler(401)
+def unauthorized(e):
+    return render_template('401.html'), 401
