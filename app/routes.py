@@ -8,11 +8,33 @@ from flask_login import current_user, logout_user, login_user, login_required
 from itsdangerous import SignatureExpired, BadTimeSignature, URLSafeTimedSerializer
 import os
 import secrets
+from app.decorators import admin_required
 
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+@app.route('/admin')
+@login_required
+@admin_required
+def admin():
+    """Admin dashboard showing all users."""
+    users = User.query.all()
+    return render_template('admin.html', users=users)
+
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    """Delete a user."""
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('The user has been deleted!', 'success')
+    return redirect(url_for('admin'))
+
 
 @login_required
 @app.route('/')
@@ -58,12 +80,20 @@ def about(username):
     posts = user.posts.order_by(Post.timestamp.desc()).paginate(page=page, per_page=10)
     
     return render_template('about.html', title=f"{user.username}'s Profile", user=user, form=form, posts=posts)
+
 def save_picture(form_picture):
+    from PIL import Image
+
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
     picture_path = os.path.join(app.root_path, 'static/images', picture_fn)
-    form_picture.save(picture_path)
+
+    output_size = (125, 125)  # Resize to 125x125 pixels
+    img = Image.open(form_picture)
+    img.thumbnail(output_size)
+    img.save(picture_path)
+
     return picture_fn
 
 @app.context_processor
@@ -287,7 +317,7 @@ def edit_post(post_id):
 @app.route('/post/<int:post_id>/delete', methods=['POST'])
 def delete_post(post_id):
     post = Post.query.get_or_404(post_id)
-    if post.author != current_user:
+    if post.author != current_user and current_user.is_admin is False:
         abort(403)
     db.session.delete(post)
     db.session.commit()
@@ -355,3 +385,21 @@ def internal_server_error(e):
 @app.errorhandler(401)
 def unauthorized(e):
     return render_template('401.html'), 401
+
+@app.route('/user_list', methods=['GET', 'POST'])
+@login_required
+def user_list():
+    """List of all users with pagination."""
+    page = request.args.get('page', 1, type=int)
+    users = User.query.paginate(page=page, per_page=10)
+    return render_template('user_list.html', title='User List', users=users)
+
+@app.route('/followers/<username>')
+@login_required
+def followers(username):
+    """List of followers for a user."""
+    user = User.query.filter_by(username=username).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    pagination = user.followers.paginate(page=page, per_page=10, error_out=False)
+    followers = pagination.items
+    return render_template('followers.html', title='Followers', user=user, followers=followers, pagination=pagination)

@@ -17,6 +17,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(60), nullable=False)
     bio = db.Column(db.String(500))
     is_active = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)
     
     # Relationships
     posts = db.relationship('Post', backref='author', lazy='dynamic')

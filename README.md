@@ -1,92 +1,105 @@
-# Project Setup Instructions
+Community Blog App
+Welcome to the Community Blog App, a platform for users to share their thoughts and ideas through blog posts. This application allows users to register, log in, create posts, edit them, and view posts by other users.
 
-To test the functionality of the login and register features, you'll need to set up a database. We'll use SQLite for simplicity. Follow the steps below to get everything started:
+Table of Contents
+Features
+Installation
+Prerequisites
+Setup
+Usage
+Routes
+Technologies Used
+Contributing
+License
+Contact
+Features
+User authentication (register, login, logout)
+Create, edit, and delete blog posts
+View posts from all users
+Pagination for posts
+User profiles with bio and image
+Responsive design for mobile and desktop
+Installation
+Prerequisites
+Python 3.8 or higher
+Virtual environment tool (venv or virtualenv)
+SQLite (comes bundled with Python)
+Setup
+Clone the repository:
 
-## Getting Started
 
-### Prerequisites
+git clone https://github.com/yourusername/community_blog_app.git
+cd community_blog_app
+Create a virtual environment and activate it:
 
-Ensure you have Python 3 installed on your system. You can check your Python version by running:
 
-```sh
-python3 --version
-```
+python3 -m venv venv
+source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+Install the required packages:
 
-### Setting Up the Database
 
-1. Open a terminal and start the Python interpreter:
+pip install -r requirements.txt
+Usage
+Open your web browser and navigate to http://127.0.0.1:5000.
+Register a new account.
+Log in with your new account.
+Create, edit, and view blog posts.
+Routes
+/: Home page displaying blog posts
+/register: User registration
+/login: User login
+/logout: User logout
+/account: User account management
+/post/new: Create a new post
+/post/<int:post_id>: View a specific post
+/post/<int:post_id>/edit: Edit a specific post
+/post/<int:post_id>/delete: Delete a specific post
+Technologies Used
+Backend:
+Python
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Login
+Flask-WTF
+Frontend:
+Jinja2
+Bootstrap (for styling)
+Database:
+SQLite
+Contributing
+We welcome contributions from the community. Please follow these steps to contribute:
 
-    ```sh
-    python3
-    ```
+Fork the repository:
+Click the "Fork" button at the top right of this page to create your own copy of the repository.
 
-2. Import the necessary modules from your application:
+Clone your fork:
 
-    ```python
-    from app import app, db
-    ```
 
-3. Create an application context to work with the database:
+git clone git@github.com:Kook16/Community_Blog.git
+cd community_blog_app
+Create a new branch:
 
-    ```python
-    app.app_context().push()
-    ```
 
-4. Create all the necessary database tables:
+git checkout -b feature/your-feature-name
+Make your changes:
+Implement your feature or bug fix.
 
-    ```python
-    db.create_all()
-    ```
+Commit your changes:
 
-5. Exit the Python interpreter by pressing `Ctrl+D` or typing `exit()`.
 
-### Running the Flask Application
+git commit -m "Description of your changes"
+Push to your fork:
 
-After setting up the database, you can run your Flask application to test the login and register features.
 
-1. In your terminal, navigate to the directory where your Flask application is located.
+git push origin feature/your-feature-name
+Create a pull request:
+Go to the original repository and click the "New pull request" button. Provide a detailed description of your changes and submit the pull request.
 
-2. Run the Flask application:
 
-    ```sh
-    flask run
-    ```
+Contact
+For any questions or feedback, please contact:
 
-3. Open your web browser and navigate to `http://127.0.0.1:5000` to access your application.
-
-### Testing the Features
-
-Now that your application is running, you can test the login and register features:
-
-1. **Register a New User:**
-   - Navigate to the registration page.
-   - Fill in the necessary details and submit the form.
-
-2. **Login with an Existing User:**
-   - Navigate to the login page.
-   - Enter the credentials of a registered user and submit the form.
-
-### Additional Notes
-
-- Make sure your `app` module is correctly configured with the necessary configurations for the database.
-- If you encounter any issues, check your Flask application logs for detailed error messages.
-
-### Troubleshooting
-
-If you encounter any issues, consider the following:
-
-- Ensure all dependencies are installed. You can use a virtual environment to manage your project dependencies:
-
-    ```sh
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    ```
-
-- Check for typos in your code, especially in the import statements and method calls.
-- Refer to the Flask documentation for more detailed explanations on context management and database setup.
-
-## Conclusion
-
-By following these steps, you should be able to set up the SQLite database, run your Flask application, and test the login and register features successfully.
-
+Your Name: calvin51416@gmail.com
+GitHub: kook16
+Thank you for using the Community Blog App! We hope you enjoy it.
